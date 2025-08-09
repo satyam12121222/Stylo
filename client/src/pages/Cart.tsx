@@ -28,8 +28,8 @@ const Cart: React.FC = () => {
     }
   );
 
-  const updateQty = useMutation(
-    async ({ productId, size, color, quantity }: { productId: string; size: string; color: string; quantity: number }) => {
+  const updateQty = useMutation<CartItem[], unknown, { productId: string; size: string; color: string; quantity: number }>(
+    async ({ productId, size, color, quantity }) => {
       const res = await axios.put(`/api/cart/update/${productId}`, { size, color, quantity });
       return res.data.cart as CartItem[];
     },
@@ -37,12 +37,14 @@ const Cart: React.FC = () => {
       onSuccess: () => {
         queryClient.invalidateQueries('cart');
       },
-      onError: () => toast.error('Failed to update quantity')
+      onError: () => {
+        toast.error('Failed to update quantity');
+      }
     }
   );
 
-  const removeItem = useMutation(
-    async ({ productId, size, color }: { productId: string; size: string; color: string }) => {
+  const removeItem = useMutation<CartItem[], unknown, { productId: string; size: string; color: string }>(
+    async ({ productId, size, color }) => {
       const res = await axios.delete(`/api/cart/remove/${productId}?size=${encodeURIComponent(size)}&color=${encodeURIComponent(color)}`);
       return res.data.cart as CartItem[];
     },
@@ -51,11 +53,13 @@ const Cart: React.FC = () => {
         queryClient.invalidateQueries('cart');
         toast.success('Removed from cart');
       },
-      onError: () => toast.error('Failed to remove item')
+      onError: () => {
+        toast.error('Failed to remove item');
+      }
     }
   );
 
-  const clearCart = useMutation(
+  const clearCart = useMutation<void, unknown, void>(
     async () => {
       await axios.delete('/api/cart/clear');
     },
@@ -64,7 +68,9 @@ const Cart: React.FC = () => {
         queryClient.invalidateQueries('cart');
         toast.success('Cart cleared');
       },
-      onError: () => toast.error('Failed to clear cart')
+      onError: () => {
+        toast.error('Failed to clear cart');
+      }
     }
   );
 
