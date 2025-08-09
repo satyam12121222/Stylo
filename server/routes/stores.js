@@ -15,10 +15,10 @@ router.get('/', async (req, res) => {
 
     let stores;
     if (lat && lng) {
-      // Find stores within radius
+      // Find stores within radius using GeoJSON 'location'
       stores = await Store.find({
         ...filter,
-        'address.coordinates': {
+        location: {
           $near: {
             $geometry: {
               type: 'Point',
