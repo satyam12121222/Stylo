@@ -1,22 +1,22 @@
 const express = require('express');
 const multer = require('multer');
+const cloudinary = require('cloudinary').v2;
 const Product = require('../models/Product');
 const Store = require('../models/Store');
 const auth = require('../middleware/auth');
 
-// Configure multer for image uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/products/'); // Make sure this directory exists
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + '.' + file.originalname.split('.').pop());
-  }
+// Configure Cloudinary (env vars must be set in production)
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-const upload = multer({ 
-  storage: storage,
+// Multer memory storage to pass buffers to Cloudinary
+const storage = multer.memoryStorage();
+
+const upload = multer({
+  storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
   fileFilter: function (req, file, cb) {
     if (file.mimetype.startsWith('image/')) {
@@ -333,14 +333,27 @@ router.delete('/:id', auth, async (req, res) => {
 });
 
 // Upload product images
-router.post('/upload-images', auth, upload.array('images', 5), (req, res) => {
+router.post('/upload-images', auth, upload.array('images', 5), async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ message: 'No images uploaded' });
     }
 
-    const imageUrls = req.files.map(file => `/uploads/products/${file.filename}`);
-    
+    // If Cloudinary not configured, return error to avoid silent failure in PaaS
+    if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+      return res.status(500).json({ message: 'Image service not configured' });
+    }
+
+    const imageUrls = [];
+    for (const file of req.files) {
+      const b64 = Buffer.from(file.buffer).toString("base64");
+      let dataURI = "data:" + file.mimetype + ";base64," + b64;
+      const result = await cloudinary.uploader.upload(dataURI, {
+        folder: 'stylo-products'
+      });
+      imageUrls.push(result.secure_url);
+    }
+
     res.json({
       message: 'Images uploaded successfully',
       images: imageUrls

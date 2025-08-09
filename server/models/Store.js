@@ -123,3 +123,4 @@ storeSchema.index({ "address.coordinates": "2dsphere" });
 
 module.exports = mongoose.model('Store', storeSchema);
 
+

@@ -100,3 +100,4 @@ router.delete('/favorites/:productId', auth, async (req, res) => {
 
 module.exports = router;
 
+

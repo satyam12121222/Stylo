@@ -147,16 +147,16 @@ const AddProduct: React.FC = () => {
   const uploadImages = async (): Promise<string[]> => {
     if (imageFiles.length === 0) return [];
 
-    const uploadPromises = imageFiles.map(async (file) => {
-      const formData = new FormData();
-      formData.append('image', file);
+    const formData = new FormData();
+    imageFiles.forEach((file) => formData.append('images', file));
 
-      // Mock upload - in production, use actual image upload service
-      // For now, return mock URLs
-      return `https://via.placeholder.com/400x400?text=${encodeURIComponent(file.name)}`;
+    const { data } = await axios.post('/api/products/upload-images', formData, {
+      headers: { 
+        'Content-Type': 'multipart/form-data',
+        Authorization: `Bearer ${token}`
+      }
     });
-
-    return Promise.all(uploadPromises);
+    return data.images as string[];
   };
 
   const onSubmit = async (data: ProductFormData) => {

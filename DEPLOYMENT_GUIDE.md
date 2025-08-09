@@ -87,7 +87,24 @@ CLOUDINARY_API_KEY=your-api-key
 CLOUDINARY_API_SECRET=your-api-secret
 ```
 
-### 3. Database Setup
+### 3. Cloudinary Setup (Required for Production)
+Cloudinary is used for storing product images in the cloud. This is essential for production deployment.
+
+#### Steps to Set Up Cloudinary:
+1. **Create Account**: Go to [cloudinary.com](https://cloudinary.com) and sign up for a free account
+2. **Get Credentials**: From your dashboard, copy:
+   - Cloud Name
+   - API Key  
+   - API Secret
+3. **Update Environment Variables**: Set these in your `.env` file and production environment
+
+#### Why Cloudinary?
+- **Local Storage**: Files are lost when server restarts (not suitable for production)
+- **Cloud Storage**: Images persist across deployments and server restarts
+- **CDN**: Fast image delivery worldwide
+- **Free Tier**: 25GB storage and 25GB bandwidth per month
+
+### 4. Database Setup
 ```bash
 # Start MongoDB locally
 mongod
@@ -235,6 +252,39 @@ npm install -g vercel
 cd client
 vercel --prod
 ```
+
+#### Render Deployment (Recommended - One-Click)
+Render provides the easiest deployment option with automatic builds and scaling.
+
+##### 1. One-Click Deployment
+1. **Fork/Clone**: Ensure your code is in a GitHub repository
+2. **Connect to Render**: Go to [render.com](https://render.com) and sign up
+3. **New Web Service**: Click "New +" → "Web Service"
+4. **Connect Repository**: Connect your GitHub account and select the Stylo repository
+5. **Auto-Deploy**: Render will automatically detect the `render.yaml` configuration
+
+##### 2. Environment Variables (Set in Render Dashboard)
+```
+NODE_ENV=production
+PORT=5000
+MONGODB_URI=your-mongodb-atlas-connection-string
+JWT_SECRET=your-super-secret-jwt-key
+CLIENT_URL=https://your-app-name.onrender.com
+STRIPE_SECRET_KEY=your-stripe-secret-key
+CLOUDINARY_CLOUD_NAME=your-cloudinary-cloud-name
+CLOUDINARY_API_KEY=your-cloudinary-api-key
+CLOUDINARY_API_SECRET=your-cloudinary-api-secret
+```
+
+##### 3. Automatic Deployment
+- **Build Command**: `npm install && cd client && npm install && cd .. && npm run build`
+- **Start Command**: `node server/index.js`
+- **Health Check**: `/api/health`
+
+##### 4. Custom Domain (Optional)
+- Add your custom domain in Render dashboard
+- Update `CLIENT_URL` environment variable
+- SSL certificate is automatically provided
 
 ### Option 3: Docker Deployment
 
