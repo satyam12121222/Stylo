@@ -39,6 +39,8 @@ interface Store {
   images: string[];
 }
 
+const PUNE_FALLBACK = { lat: 18.5204, lng: 73.8567 };
+
 const Home: React.FC = () => {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
 
@@ -51,25 +53,27 @@ const Home: React.FC = () => {
     }
   );
 
-  // Fetch nearby stores
+  // Fetch stores (nearby if we have coords; else fetch all)
   const { data: nearbyStores, isLoading: storesLoading } = useQuery(
     ['nearbyStores', userLocation],
     async () => {
-      if (!userLocation) return [];
-      const response = await axios.get('/api/stores', {
-        params: {
-          lat: userLocation.lat,
-          lng: userLocation.lng,
-          radius: 10
-        }
-      });
+      if (userLocation) {
+        const response = await axios.get('/api/stores', {
+          params: {
+            lat: userLocation.lat,
+            lng: userLocation.lng,
+            radius: 10
+          }
+        });
+        return response.data;
+      }
+      const response = await axios.get('/api/stores');
       return response.data;
-    },
-    { enabled: !!userLocation }
+    }
   );
 
   useEffect(() => {
-    // Get user location
+    // Get user location; on failure, fall back to Pune so we still show stores
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -80,8 +84,12 @@ const Home: React.FC = () => {
         },
         (error) => {
           console.error('Error getting location:', error);
-        }
+          setUserLocation(PUNE_FALLBACK);
+        },
+        { timeout: 8000 }
       );
+    } else {
+      setUserLocation(PUNE_FALLBACK);
     }
   }, []);
 
@@ -258,64 +266,62 @@ const Home: React.FC = () => {
       </section>
 
       {/* Nearby Stores */}
-      {userLocation && (
-        <section className="py-16 bg-gray-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center mb-8">
-              <h2 className="text-3xl font-bold text-gray-900">
-                Stores Near You
-              </h2>
-              <Link to="/stores" className="flex items-center text-primary-600 hover:text-primary-700">
-                View All <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </div>
-            
-            {storesLoading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="animate-pulse">
-                    <div className="bg-gray-200 h-48 rounded-lg mb-4"></div>
-                    <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {nearbyStores?.slice(0, 3).map((store: Store) => (
-                  <Link key={store._id} to={`/stores/${store._id}`} className="card p-6 group">
-                    <div className="relative mb-4">
-                      <img
-                        src={store.images[0] || '/placeholder-store.jpg'}
-                        alt={store.name}
-                        className="w-full h-48 object-cover rounded-lg group-hover:scale-105 transition-transform duration-200"
-                      />
-                    </div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2 group-hover:text-primary-600 transition-colors">
-                      {store.name}
-                    </h3>
-                    <p className="text-gray-600 mb-3 line-clamp-2">
-                      {store.description}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-1">
-                        <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                        <span className="text-sm text-gray-600">
-                          {store.rating.average.toFixed(1)} ({store.rating.count})
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-1 text-sm text-gray-500">
-                        <MapPin className="h-4 w-4" />
-                        <span>{store.address.city}, {store.address.state}</span>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
+      <section className="py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-3xl font-bold text-gray-900">
+              Stores Near You
+            </h2>
+            <Link to="/stores" className="flex items-center text-primary-600 hover:text-primary-700">
+              View All <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
           </div>
-        </section>
-      )}
+          
+          {storesLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="animate-pulse">
+                  <div className="bg-gray-200 h-48 rounded-lg mb-4"></div>
+                  <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {nearbyStores?.slice(0, 6).map((store: Store) => (
+                <Link key={store._id} to={`/stores/${store._id}`} className="card p-6 group">
+                  <div className="relative mb-4">
+                    <img
+                      src={store.images[0] || '/placeholder-store.jpg'}
+                      alt={store.name}
+                      className="w-full h-48 object-cover rounded-lg group-hover:scale-105 transition-transform duration-200"
+                    />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2 group-hover:text-primary-600 transition-colors">
+                    {store.name}
+                  </h3>
+                  <p className="text-gray-600 mb-3 line-clamp-2">
+                    {store.description}
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-1">
+                      <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                      <span className="text-sm text-gray-600">
+                        {store.rating.average.toFixed(1)} ({store.rating.count})
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-1 text-sm text-gray-500">
+                      <MapPin className="h-4 w-4" />
+                      <span>{store.address.city}, {store.address.state}</span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
 
       {/* CTA Section */}
       <section className="py-16 bg-primary-600 text-white">
