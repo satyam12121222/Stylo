@@ -70,6 +70,35 @@ router.post('/', auth, async (req, res) => {
       deliveryOptions
     } = req.body;
 
+    // Basic validation
+    const missing = [];
+    if (!name) missing.push('name');
+    if (!description) missing.push('description');
+    if (!address?.street) missing.push('address.street');
+    if (!address?.city) missing.push('address.city');
+    if (!address?.state) missing.push('address.state');
+    if (!address?.zipCode) missing.push('address.zipCode');
+    if (address?.coordinates) {
+      // normalize lat/lng to numbers if provided as strings
+      if (typeof address.coordinates.lat !== 'number') {
+        address.coordinates.lat = parseFloat(address.coordinates.lat);
+      }
+      if (typeof address.coordinates.lng !== 'number') {
+        address.coordinates.lng = parseFloat(address.coordinates.lng);
+      }
+      if (Number.isNaN(address.coordinates.lat)) missing.push('address.coordinates.lat');
+      if (Number.isNaN(address.coordinates.lng)) missing.push('address.coordinates.lng');
+    } else {
+      missing.push('address.coordinates.lat');
+      missing.push('address.coordinates.lng');
+    }
+    if (!contact?.phone) missing.push('contact.phone');
+    if (!contact?.email) missing.push('contact.email');
+
+    if (missing.length) {
+      return res.status(400).json({ message: 'Missing or invalid fields', fields: missing });
+    }
+
     const store = new Store({
       name,
       description,
@@ -90,6 +119,10 @@ router.post('/', auth, async (req, res) => {
     });
   } catch (error) {
     console.error('Store creation error:', error);
+    if (error?.name === 'ValidationError') {
+      const details = Object.values(error.errors).map(e => e.message);
+      return res.status(400).json({ message: 'Validation failed', details });
+    }
     res.status(500).json({ message: 'Server error' });
   }
 });
