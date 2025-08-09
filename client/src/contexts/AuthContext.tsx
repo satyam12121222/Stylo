@@ -51,19 +51,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
 
+  // Ensure axios has the Authorization header whenever we have a token
   useEffect(() => {
     if (token) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       fetchUser();
     } else {
+      delete axios.defaults.headers.common['Authorization'];
       setLoading(false);
     }
   }, [token]);
 
   const fetchUser = async () => {
     try {
-      const response = await axios.get('/api/auth/profile', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await axios.get('/api/auth/profile');
       setUser(response.data);
     } catch (error) {
       console.error('Error fetching user:', error);
