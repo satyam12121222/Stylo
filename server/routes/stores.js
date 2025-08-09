@@ -99,6 +99,12 @@ router.post('/', auth, async (req, res) => {
       return res.status(400).json({ message: 'Missing or invalid fields', fields: missing });
     }
 
+    // Build GeoJSON location before validation
+    const location = {
+      type: 'Point',
+      coordinates: [address.coordinates.lng, address.coordinates.lat]
+    };
+
     const store = new Store({
       name,
       description,
@@ -108,7 +114,8 @@ router.post('/', auth, async (req, res) => {
       categories,
       brands,
       operatingHours,
-      deliveryOptions
+      deliveryOptions,
+      location
     });
 
     await store.save();
