@@ -50,7 +50,9 @@ const storeSchema = new mongoose.Schema({
     },
     email: {
       type: String,
-      required: true
+      required: true,
+      lowercase: true,
+      trim: true
     }
   },
   images: [{
@@ -58,10 +60,13 @@ const storeSchema = new mongoose.Schema({
   }],
   categories: [{
     type: String,
-    enum: ['men', 'women', 'kids', 'accessories', 'footwear', 'jewelry', 'bags']
+    enum: ['men', 'women', 'kids', 'accessories', 'footwear', 'jewelry', 'bags'],
+    lowercase: true,
+    trim: true
   }],
   brands: [{
-    type: String
+    type: String,
+    trim: true
   }],
   rating: {
     average: {
