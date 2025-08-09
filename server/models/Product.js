@@ -138,3 +138,4 @@ productSchema.index({ name: 'text', description: 'text', brand: 'text' });
 module.exports = mongoose.model('Product', productSchema);
 
 
+

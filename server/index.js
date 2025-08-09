@@ -5,10 +5,11 @@ const helmet = require('helmet');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 10000;
 
 // Trust proxy for rate limiting
 app.set('trust proxy', 1);
@@ -62,11 +63,36 @@ app.get('/api/health', (req, res) => {
 
 // Serve static files from React build
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../client/build')));
+  const clientBuildPath = path.join(__dirname, '../client/build');
   
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
-  });
+  // Check if client build exists
+  if (fs.existsSync(clientBuildPath)) {
+    app.use(express.static(clientBuildPath));
+    
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(clientBuildPath, 'index.html'));
+    });
+  } else {
+    console.warn('Client build directory not found. API-only mode enabled.');
+    
+    // API-only fallback
+    app.get('/', (req, res) => {
+      res.json({
+        message: 'Stylo API is running',
+        status: 'API-only mode (client build not found)',
+        endpoints: [
+          '/api/health',
+          '/api/auth',
+          '/api/products',
+          '/api/stores',
+          '/api/orders',
+          '/api/cart',
+          '/api/payment',
+          '/api/user'
+        ]
+      });
+    });
+  }
 }
 
 // Error handling middleware
