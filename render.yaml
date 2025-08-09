@@ -14,9 +14,6 @@ services:
         value: production
       - key: PORT
         value: 10000
-      - key: CLIENT_URL
-        # Set this to your Render custom domain later if you add one
-        fromService: stylo-web
       - key: MONGODB_URI
         sync: false
       - key: JWT_SECRET

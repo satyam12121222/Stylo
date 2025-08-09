@@ -17,10 +17,37 @@ app.set('trust proxy', 1);
 // Middleware
 app.use(helmet());
 app.use(compression());
-app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
-  credentials: true
-}));
+
+// CORS with allowlist including Render external URL and localhost
+const allowedOrigins = [
+  process.env.RENDER_EXTERNAL_URL,
+  process.env.CLIENT_URL,
+  'http://localhost:3000',
+  'http://localhost:5173'
+].filter(Boolean);
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      const isAllowed = allowedOrigins.some((allowed) => {
+        if (!allowed) return false;
+        try {
+          const allowedUrl = new URL(allowed);
+          const originUrl = new URL(origin);
+          return allowedUrl.host === originUrl.host;
+        } catch (_) {
+          return origin === allowed;
+        }
+      }) || (origin && origin.endsWith('.onrender.com'));
+
+      if (isAllowed) return callback(null, true);
+      return callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+    optionsSuccessStatus: 200,
+  })
+);
 
 // Rate limiting
 const limiter = rateLimit({
